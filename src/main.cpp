@@ -72,7 +72,7 @@ void loop()
   
 
   if(millis()-sendTime>250){
-    byte ACU_gen_data[8] = {0, 0, 0, 0, 0, 0, 0, 90};
+    byte ACU_gen_data[8] = {0, 0, 0, 0, 0, 0, 0, (int)random(0, 101)};
 
     send_msg(ACU_gen.id, ACU_gen.ext, ACU_gen.len, ACU_gen_data);
     
