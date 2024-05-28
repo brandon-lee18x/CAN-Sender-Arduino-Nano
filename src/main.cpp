@@ -20,7 +20,15 @@ typedef struct CAN_params {
 } CAN_params;
 
 //named based on "notes" column on CAN ID spreadsheet
-CAN_params ACU_gen = {0x96, 0, 8};
+CAN_params ACU_gen_2 = {0x97, 0, 8};
+CAN_params pedal_inputs = {0xC8, 0, 8};
+CAN_params vdm_speed = {0xF1, 0, 8};
+CAN_params vdm_stuff = {0xF0, 0, 8}; //maxpower, CAN ok, System ok, TCM ok, VDM state, VDM mode
+CAN_params ac_curr = {0x2116, 1, 8};
+CAN_params e_rpm = {0x2016, 1, 8};
+CAN_params batt_temp = {0x96, 0, 8};
+CAN_params motor_temp = {0x2216, 1, 8}; //also inv temp (controller temp)
+CAN_params VDM_popups = {0xF4, 0, 8};
 
 void LED_on();
 void LED_timer();
@@ -68,14 +76,45 @@ void loop()
       LED_on();
         
     Serial.println();
+    if (rxId == 0x11002) {
+      Serial.println("knob frame received");
+      for (int a : rxBuf) {
+        Serial.print(a);
+        Serial.print(" ");
+      }
+      Serial.println();
+    }
   }
   
 
   if(millis()-sendTime>250){
-    byte ACU_gen_data[8] = {0, 0, 0, 0, 0, 0, 0, (int)random(0, 101)};
+    byte ACU_gen_data[8] = {(byte)random(0, 256), (byte)random(0, 256), 0, 0, 0, 0, 0, (byte)random(0, 101)};
+    byte pedal_inputs_data[8] = {0, 0, 0, 0, (byte)random(0, 256), (byte)random(0, 256), (byte)random(0, 256),
+                                (byte)random(0, 256)};
+    byte vdm_speed_data[8] = {0, 0, 0, 0, 0, 0, (byte)random(0, 100), 0};
+    byte vdm_stuff_data[8] = {(byte)random(1, 4), (byte)random(1, 5), 0, (byte)random(1, 3), (byte)random(1, 3), (byte)random(1, 5), (byte)random(0, 81)};
+    byte ac_curr_data[8] = {(byte)random(0, 2), (byte)random(0, 2), 0, 0, 0, 0, 0, 0,};
+    byte e_rpm_data[8] = {0, 0, (byte)random(0, 10), (byte)random(0, 256), 0, 0, 0, 0};
+    int16_t rand = random(-32768, 32768);
+    byte batt_temp_data[8] = {0, 0, 0, 0, (rand >> 8) & 0xFF, rand & 0xFF, 0, 0};
+    byte motor_temp_data[8] = {0, (byte)random(0, 90), 0, (byte)random(0, 90), 0, 0, 0, 0};
+    byte error_code = (byte)random(1, 12);
+    byte vdm_popup_data[8] = {error_code, 1, 0, 0, 0, 0, 0, 0};
+    if (error_code == 9) { //vehicle settings (trq map, etc)
+      vdm_popup_data[2] = (byte)random(1, 5);
+      vdm_popup_data[3] = (byte)random(0, 121);
+      vdm_popup_data[4] = (byte)random(1, 5);
+    }
 
-    send_msg(ACU_gen.id, ACU_gen.ext, ACU_gen.len, ACU_gen_data);
-    
+    send_msg(ACU_gen_2.id, ACU_gen_2.ext, ACU_gen_2.len, ACU_gen_data);
+    send_msg(pedal_inputs.id, pedal_inputs.ext, pedal_inputs.len, pedal_inputs_data);
+    send_msg(vdm_speed.id, vdm_speed.ext, vdm_speed.len, vdm_speed_data);
+    send_msg(vdm_stuff.id, vdm_stuff.ext, vdm_stuff.len, vdm_stuff_data);
+    send_msg(ac_curr.id, ac_curr.ext, ac_curr.len, ac_curr_data);
+    send_msg(e_rpm.id, e_rpm.ext, e_rpm.len, e_rpm_data);
+    send_msg(batt_temp.id, batt_temp.ext, batt_temp.len, batt_temp_data);
+    send_msg(motor_temp.id, motor_temp.ext, motor_temp.len, motor_temp_data);
+    send_msg(VDM_popups.id, VDM_popups.ext, VDM_popups.len, vdm_popup_data);
   }
 
   LED_timer();
